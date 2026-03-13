@@ -90,6 +90,14 @@ class INoteRepository(ABC):
     async def delete_note_file(self, user_name: str, note_id: int):
         pass
 
+    @abstractmethod
+    def load_manager_data(self) -> dict:
+        pass
+
+    @abstractmethod
+    def save_manager_data(self, data: dict):
+        pass
+
 
 class ICacheRepository(ABC):
     """
@@ -106,4 +114,16 @@ class ICacheRepository(ABC):
 
     @abstractmethod
     async def increment(self, key: str) -> int:
+        pass
+
+    @abstractmethod
+    async def hash_set_all(self, key: str, mapping: dict, ttl: Optional[int] = None):
+        pass
+
+    @abstractmethod
+    async def hash_get_all(self, key: str) -> dict:
+        pass
+
+    @abstractmethod
+    async def set_ttl(self, key: str, ttl: int):
         pass

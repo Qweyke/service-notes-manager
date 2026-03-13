@@ -23,7 +23,7 @@ class NotesService:
         manager = self.file_repo.load_manager_data()
         if user_name in manager:
             if note_id not in manager[user_name]["notes"]:
-                manager[user_name]["notes"].append(note_id)
+                manager[user_name]["notes"].append(int(note_id))
                 self.file_repo.save_manager_data(manager)
 
         meta_key = f"note:{note_id}:meta"
@@ -44,7 +44,7 @@ class NotesService:
 
         # 2. Update fields
         note_data["text"] = new_text
-        note_data["updated_at"] = datetime.now()
+        note_data["updated_at"] = datetime.now().isoformat()
 
         # 3. Save updated data back to the file
         await self.file_repo.save_note(user_name, note_id, note_data)
@@ -65,8 +65,11 @@ class NotesService:
         """
         # 1. Update the user manager (ownership list)
         manager = self.file_repo.load_manager_data()
-        if user_name in manager and str(note_id) in manager[user_name]["notes"]:
-            manager[user_name]["notes"].remove(str(note_id))
+        if user_name in manager:
+            # Это сработает, даже если в списке были и строки, и числа
+            manager[user_name]["notes"] = [
+                id for id in manager[user_name]["notes"] if int(id) != int(note_id)
+            ]
             self.file_repo.save_manager_data(manager)
 
         # 2. Remove the physical JSON file
