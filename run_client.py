@@ -1,5 +1,6 @@
 import requests
 import sys
+import json
 
 URL = "http://127.0.0.1:8080"
 
@@ -11,6 +12,8 @@ class NotesClient:
 
     def _get_headers(self):
         return {"Authorization": f"Bearer {self.jwt}"} if self.jwt else {}
+
+    # --- Existing methods (register, login, add_note, etc.) remain the same ---
 
     def register(self):
         name = input("Enter new username: ")
@@ -26,7 +29,6 @@ class NotesClient:
     def login(self):
         name = input("Username: ")
         password = input("Password: ")
-        # В нашей текущей реализации router.py авторизация идет через GET с телом
         response = requests.get(
             f"{URL}/users/authorize", json={"name": name, "password": password}
         )
@@ -62,7 +64,6 @@ class NotesClient:
         )
         if response.ok:
             data = response.json()
-            # Наш сервер теперь возвращает информацию, был ли это кэш (Redis) или файл
             print(f"\n--- Note {note_id} ---\n{data.get('text')}\n")
         else:
             print(f"Failed to get note: {response.json().get('detail')}")
@@ -77,10 +78,50 @@ class NotesClient:
         else:
             print(f"Delete failed: {response.json().get('detail')}")
 
+    # --- NEW: Redis Direct Operations ---
+
+    def redis_set_string(self):
+        key = input("Key: ")
+        val = input("Value: ")
+        ttl = input("TTL (seconds, optional): ")
+        payload = {"key": key, "value": val, "ttl": int(ttl) if ttl else None}
+
+        # Method: POST to /redis/string
+        res = requests.post(
+            f"{URL}/redis/string", json=payload, headers=self._get_headers()
+        )
+        print("Success" if res.ok else f"Error: {res.text}")
+
+    def redis_get_string(self):
+        key = input("Key: ")
+        res = requests.get(f"{URL}/redis/string/{key}", headers=self._get_headers())
+        if res.ok:
+            print(f"Value: {res.json().get('value')}")
+        else:
+            print(f"Not found or Error: {res.text}")
+
+    def redis_list_push(self):
+        key = input("List Key: ")
+        val = input("Value to push: ")
+        res = requests.post(
+            f"{URL}/redis/list/{key}", json={"value": val}, headers=self._get_headers()
+        )
+        print("Pushed" if res.ok else "Error")
+
+    def redis_hash_set(self):
+        key = input("Hash Key: ")
+        field = input("Field: ")
+        val = input("Value: ")
+        # mapping can be more complex, but for CLI we'll do one by one
+        res = requests.post(
+            f"{URL}/redis/hash/{key}", json={field: val}, headers=self._get_headers()
+        )
+        print("Hash updated" if res.ok else "Error")
+
 
 def main():
     client = NotesClient()
-    print("=== DDD Notes API Client ===")
+    print("=== DDD Notes & Redis API Client ===")
 
     while True:
         if not client.jwt:
@@ -93,9 +134,15 @@ def main():
             elif choice == "q":
                 break
         else:
-            print(f"\nLogged in as: {client.username}")
-            print("1. Add Note\n2. Get Note Text\n3. Delete Note\n4. Logout\nq. Exit")
+            print(f"\n--- Logged in as: {client.username} ---")
+            print("1. Add Note      | 5. Redis: SET String")
+            print("2. Get Note Text | 6. Redis: GET String")
+            print("3. Delete Note   | 7. Redis: LPUSH")
+            print("4. Logout        | 8. Redis: HSET")
+            print("q. Exit")
+
             choice = input("Select action -> ")
+
             if choice == "1":
                 client.add_note()
             elif choice == "2":
@@ -105,6 +152,14 @@ def main():
             elif choice == "4":
                 client.jwt = None
                 print("Logged out.")
+            elif choice == "5":
+                client.redis_set_string()
+            elif choice == "6":
+                client.redis_get_string()
+            elif choice == "7":
+                client.redis_list_push()
+            elif choice == "8":
+                client.redis_hash_set()
             elif choice == "q":
                 break
 

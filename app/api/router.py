@@ -1,3 +1,4 @@
+from app.infrastructure.redis_repo import RedisRepository
 from fastapi import APIRouter, Depends, Header, HTTPException
 from dependency_injector.wiring import inject, Provide
 
@@ -85,3 +86,57 @@ async def delete_note(
     # Full cleanup: Files + Redis Metadata + Redis Cache
     await notes_service.delete_note(user_name, note_id)
     return models.DeleteNoteResponse(id=note_id, name=user_name)
+
+
+# --- Redis Direct Access Routes ---
+
+
+@app_router.post("/redis/string")
+@inject
+async def redis_set_string(
+    key: str,
+    value: str,
+    ttl: int | None = None,
+    user_name: str = Depends(get_current_user),  # Опционально: только для залогиненных
+    redis_repo: RedisRepository = Depends(Provide[Container.redis_repo]),
+):
+    """Directly set a string value in Redis."""
+    await redis_repo.set_string(key, value, ttl)
+    return {"status": "ok", "key": key}
+
+
+@app_router.get("/redis/string/{key}")
+@inject
+async def redis_get_string(
+    key: str,
+    user_name: str = Depends(get_current_user),
+    redis_repo: RedisRepository = Depends(Provide[Container.redis_repo]),
+):
+    """Directly get a string value from Redis."""
+    value = await redis_repo.get_string(key)
+    return {"key": key, "value": value}
+
+
+@app_router.post("/redis/list/{key}")
+@inject
+async def redis_list_push(
+    key: str,
+    value: str,
+    user_name: str = Depends(get_current_user),
+    redis_repo: RedisRepository = Depends(Provide[Container.redis_repo]),
+):
+    """Push value to a Redis list."""
+    await redis_repo.list_push(key, value)
+    return {"status": "pushed", "key": key}
+
+
+@app_router.delete("/redis/key/{key}")
+@inject
+async def redis_delete_key(
+    key: str,
+    user_name: str = Depends(get_current_user),
+    redis_repo: RedisRepository = Depends(Provide[Container.redis_repo]),
+):
+    """Delete any key from Redis."""
+    await redis_repo.delete(key)
+    return {"status": "deleted", "key": key}
