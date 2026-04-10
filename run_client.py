@@ -1,7 +1,7 @@
 import requests
 import sys
 
-URL = "http://127.0.0.1:8080"
+URL = "https://localhost/app"
 
 
 class NotesClient:
@@ -16,7 +16,9 @@ class NotesClient:
         name = input("Enter new username: ")
         password = input("Enter password: ")
         response = requests.post(
-            f"{URL}/users/register", json={"name": name, "password": password}
+            f"{URL}/users/register",
+            json={"name": name, "password": password},
+            verify=False,
         )
         if response.ok:
             print(f"Successfully registered user: {response.json().get('name')}")
@@ -28,7 +30,9 @@ class NotesClient:
         password = input("Password: ")
         # В нашей текущей реализации router.py авторизация идет через GET с телом
         response = requests.get(
-            f"{URL}/users/authorize", json={"name": name, "password": password}
+            f"{URL}/users/authorize",
+            json={"name": name, "password": password},
+            verify=False,
         )
         if response.ok:
             data = response.json()
@@ -47,6 +51,7 @@ class NotesClient:
                 f"{URL}/notes/new/{note_id}",
                 json={"text": text},
                 headers=self._get_headers(),
+                verify=False,
             )
             if response.ok:
                 print(f"Note {note_id} saved successfully.")
@@ -58,7 +63,7 @@ class NotesClient:
     def get_note_text(self):
         note_id = input("Enter note ID: ")
         response = requests.get(
-            f"{URL}/notes/text/{note_id}", headers=self._get_headers()
+            f"{URL}/notes/text/{note_id}", headers=self._get_headers(), verify=False
         )
         if response.ok:
             data = response.json()
@@ -70,7 +75,7 @@ class NotesClient:
     def delete_note(self):
         note_id = input("Enter note ID to delete: ")
         response = requests.delete(
-            f"{URL}/notes/delete/{note_id}", headers=self._get_headers()
+            f"{URL}/notes/delete/{note_id}", headers=self._get_headers(), verify=False
         )
         if response.ok:
             print(f"Note {note_id} deleted (and cache invalidated).")

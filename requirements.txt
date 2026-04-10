@@ -1,7 +1,7 @@
-fastapi==0.115.6
-pydantic==2.10.3
-PyJWT==2.10.1
-PyJWT==2.10.1
-Requests==2.32.3
-uvicorn==0.32.1
-redis==7.3.0
+fastapi
+pydantic
+PyJWT
+Requests
+uvicorn
+redis
+dependency-injector

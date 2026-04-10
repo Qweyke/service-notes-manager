@@ -13,7 +13,7 @@ class Container(containers.DeclarativeContainer):
 
     redis_client = providers.Singleton(
         redis.Redis,
-        host="localhost",
+        host="redis",
         port=6379,
         decode_responses=True,
     )
